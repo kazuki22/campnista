@@ -44,7 +44,10 @@ const connectDB = async () => {
 connectDB();
 
 const db = mongoose.connection;
-db.on("error", console.error.bind(console, "connection error:"));
+db.on("error", (error) => {
+    console.error("MongoDB connection error:", error.message);
+    // 連続エラーを防ぐため、エラーログの出力回数を制限
+});
 db.once("open", () => {
     console.log("Database connected");
 });
@@ -136,14 +139,28 @@ app.use((req, res, next) => {
         return originalSend.apply(this, args);
     };
 
-    res.locals.currentUser = req.user || null;
-    res.locals.success = req.flash('success');
-    res.locals.error = req.flash('error');
+    // 確実にlocalsを設定
+    try {
+        res.locals.currentUser = req.user || null;
+        res.locals.success = req.flash ? req.flash('success') : [];
+        res.locals.error = req.flash ? req.flash('error') : [];
+    } catch (error) {
+        console.error('Error setting locals:', error);
+        res.locals.currentUser = null;
+        res.locals.success = [];
+        res.locals.error = [];
+    }
     next();
 });
 
 app.get('/', (req, res) => {
     res.render('home');
+});
+
+// robots.txtを追加してSEOクローラーエラーを防止
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send('User-agent: *\nDisallow:');
 });
 
 app.use('/', userRoutes);
