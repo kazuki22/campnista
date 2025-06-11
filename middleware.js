@@ -4,6 +4,10 @@ const Review = require('./models/review');
 const { campgroundSchema, reviewSchema } = require('./schemas');
 
 module.exports.isLoggedIn = (req, res, next) => {
+    console.log(`[AUTH CHECK] ${req.path} - isAuthenticated: ${req.isAuthenticated()}`);
+    console.log(`[AUTH CHECK] User: ${req.user ? req.user.username : 'null'}`);
+    console.log(`[AUTH CHECK] Session ID: ${req.sessionID}`);
+
     if (!req.isAuthenticated()) {
         req.session.returnTo = req.originalUrl;
         req.flash('error', 'ログインしてください');

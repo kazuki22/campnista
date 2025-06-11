@@ -83,8 +83,8 @@ const sessionConfig = {
     store: store,
     name: 'session',
     secret: process.env.SECRET || 'mysecret',
-    resave: false,
-    saveUninitialized: true,
+    resave: true,  // セッション維持のためtrueに変更
+    saveUninitialized: false,  // 不要なセッション作成を防ぐ
     cookie: {
         httpOnly: true,
         // Render.comでの問題を回避するため、secureをfalseに設定
