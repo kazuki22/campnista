@@ -12,7 +12,14 @@ module.exports.register = async (req, res, next) => {
         req.login(registeredUser, (err) => {
             if (err) return next(err);
             req.flash('success', 'Welcome to Campnista!');
-            return res.redirect('/campgrounds');
+            // セッション保存を確実にする
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    console.error('Session save error:', saveErr);
+                    return next(saveErr);
+                }
+                return res.redirect('/campgrounds');
+            });
         });
     } catch (e) {
         req.flash('error', e.message);
@@ -28,7 +35,13 @@ module.exports.login = (req, res) => {
     req.flash('success', 'おかえりなさい！');
     const redirectUrl = res.locals.returnTo || '/campgrounds';
     delete req.session.returnTo;
-    return res.redirect(redirectUrl);
+    // セッション保存を確実にする
+    req.session.save((saveErr) => {
+        if (saveErr) {
+            console.error('Session save error:', saveErr);
+        }
+        return res.redirect(redirectUrl);
+    });
 };
 
 module.exports.logout = (req, res, next) => {

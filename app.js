@@ -23,8 +23,6 @@ const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 mongoose.set('strictQuery', false);
 
-// 本番環境での不要なログを削除
-
 const dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp';
 
 // MongoDB接続設定をクリーンアップ
@@ -89,8 +87,9 @@ const sessionConfig = {
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        // 本番環境ではセキュア設定
-        secure: process.env.NODE_ENV === 'production',
+        // Render.comでの問題を回避するため、secureをfalseに設定
+        secure: false,
+        sameSite: 'lax',
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
 };
@@ -144,6 +143,12 @@ app.use((req, res, next) => {
         res.locals.currentUser = req.user || null;
         res.locals.success = req.flash ? req.flash('success') : [];
         res.locals.error = req.flash ? req.flash('error') : [];
+
+        // デバッグ用：ユーザー認証状態をログ
+        if (req.path === '/campgrounds' && req.method === 'GET') {
+            console.log(`[AUTH] User: ${req.user ? req.user.username : 'Not logged in'}`);
+            console.log(`[AUTH] Session ID: ${req.sessionID}`);
+        }
     } catch (error) {
         console.error('Error setting locals:', error);
         res.locals.currentUser = null;
