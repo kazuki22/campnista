@@ -33,6 +33,12 @@ module.exports.createCampground = async (req, res) => {
         query: req.body.campground.location,
         limit: 1
     }).send();
+
+    if (!geoData.body.features.length) {
+        req.flash('error', '場所が見つかりませんでした。正しい住所を入力してください。');
+        return res.redirect('/campgrounds/new');
+    }
+
     const campground = new Campground(req.body.campground);
     campground.geometry = geoData.body.features[0].geometry;
 

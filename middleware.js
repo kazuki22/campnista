@@ -32,6 +32,10 @@ module.exports.validateCampground = (req, res, next) => {
 module.exports.isAuthor = async (req, res, next) => {
     const { id } = req.params;
     const campground = await Campground.findById(id);
+    if (!campground) {
+        req.flash('error', 'キャンプ場が見つかりません');
+        return res.redirect('/campgrounds');
+    }
     if (!campground.author.equals(req.user._id)) {
         req.flash('error', '権限がありません');
         return res.redirect(`/campgrounds/${id}`);
@@ -42,6 +46,10 @@ module.exports.isAuthor = async (req, res, next) => {
 module.exports.isReviewAuthor = async (req, res, next) => {
     const { id, reviewId } = req.params;
     const review = await Review.findById(reviewId);
+    if (!review) {
+        req.flash('error', 'レビューが見つかりません');
+        return res.redirect(`/campgrounds/${id}`);
+    }
     if (!review.author.equals(req.user._id)) {
         req.flash('error', '権限がありません');
         return res.redirect(`/campgrounds/${id}`);
