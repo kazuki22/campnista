@@ -28,10 +28,21 @@ console.log('OpenSSL version:', process.versions.openssl);
 
 const dbUrl = process.env.DB_URL;
 mongoose.connect(dbUrl, {
-    tls: true,
     useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+    useUnifiedTopology: true,
+  
+    // ── ここから TLS 関連オプション ──
+    tls: true,                          // TLS 接続を強制
+    minVersion: 'TLSv1.2',              // TLS1.2以上を必須化
+    sslValidate: true,                  // 証明書の検証を有効に
+    serverSelectionTimeoutMS: 30000,    // SRV解決＋接続待ち時間を長めに
+    socketTimeoutMS: 45000,             // ソケット通信タイムアウト
+    heartbeatFrequencyMS: 20000,        // レプリカセット・ヘルスチェック間隔
+    // ── オプションここまで ──
+  
+  })
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
