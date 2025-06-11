@@ -26,6 +26,7 @@ mongoose.set('strictQuery', false);
 const dbUrl = process.env.DB_URL;
 mongoose.connect(dbUrl, {
     tls: true,
+    tlsAllowInvalidCertificates: true,
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
