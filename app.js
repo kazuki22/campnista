@@ -23,10 +23,12 @@ const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 mongoose.set('strictQuery', false);
 
+console.log('Node.js version:', process.version);
+console.log('OpenSSL version:', process.versions.openssl);
+
 const dbUrl = process.env.DB_URL;
 mongoose.connect(dbUrl, {
     tls: true,
-    tlsAllowInvalidCertificates: true,
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
