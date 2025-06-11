@@ -23,28 +23,25 @@ const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 mongoose.set('strictQuery', false);
 
-console.log('Node.js version:', process.version);
-console.log('OpenSSL version:', process.versions.openssl);
+// 本番環境での不要なログを削除
 
-const dbUrl = process.env.DB_URL;
-mongoose.connect(dbUrl, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  
-    // TLSオプション
-    tls: true,
-    minVersion: 'TLSv1.2',
-    sslValidate: true,
-  
-    // ── ここを追加 ──
-    tlsCAFile: path.resolve(__dirname, 'certs', 'ca.pem'),
-    // ── ここまで ──
-  
-    serverSelectionTimeoutMS: 30000,
-    socketTimeoutMS: 45000
-  })
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+const dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp';
+
+// MongoDB接続設定をクリーンアップ
+const connectDB = async () => {
+    try {
+        await mongoose.connect(dbUrl, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('✅ MongoDB Connected');
+    } catch (err) {
+        console.error('❌ MongoDB Connection Error:', err.message);
+        console.log('⚠️  App will continue without database connection');
+    }
+};
+
+connectDB();
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
@@ -63,26 +60,34 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(mongoSanitize());
 
-const store = MongoStore.create({
-    mongoUrl: dbUrl,
-    touchAfter: 24 * 60 * 60,  // 24時間ごとにセッションを更新
-    crypto: {
-        secret: 'mysecret'
-    }
-});
+let store;
+try {
+    store = MongoStore.create({
+        mongoUrl: dbUrl,
+        touchAfter: 24 * 60 * 60,  // 24時間ごとにセッションを更新
+        crypto: {
+            secret: process.env.SECRET || 'mysecret'
+        }
+    });
 
-store.on('error', function (e) {
-    console.log('SESSION STORE ERROR', e);
-});
+    store.on('error', function (e) {
+        console.log('SESSION STORE ERROR', e);
+    });
+} catch (error) {
+    console.error('Failed to create MongoDB session store:', error);
+    store = null;  // メモリーストアにフォールバック
+}
 
 const sessionConfig = {
-    store,
+    store: store,
     name: 'session',
-    secret: 'mysecret',
+    secret: process.env.SECRET || 'mysecret',
     resave: false,
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
+        // 本番環境ではセキュア設定
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
 };
@@ -101,7 +106,37 @@ app.use(helmet({
 }));
 
 app.use((req, res, next) => {
-    res.locals.currentUser = req.user;
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+
+    // レスポンス送信をトラック
+    const originalRender = res.render;
+    const originalRedirect = res.redirect;
+    const originalSend = res.send;
+
+    res.render = function (...args) {
+        if (res.headersSent) {
+            console.log(`[RENDER BLOCKED] ${req.path} - headers already sent`);
+            return;
+        }
+        console.log(`[RENDER] ${req.path} - ${args[0]}`);
+        return originalRender.apply(this, args);
+    };
+
+    res.redirect = function (...args) {
+        if (res.headersSent) {
+            console.log(`[REDIRECT BLOCKED] ${req.path} - headers already sent`);
+            return;
+        }
+        console.log(`[REDIRECT] ${req.path} -> ${args[0]}`);
+        return originalRedirect.apply(this, args);
+    };
+
+    res.send = function (...args) {
+        console.log(`[SEND] ${req.path}`);
+        return originalSend.apply(this, args);
+    };
+
+    res.locals.currentUser = req.user || null;
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
     next();
@@ -120,8 +155,17 @@ app.all('*', (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
+    console.error(`[ERROR] ${req.path}:`, err.message);
+    console.error(`[ERROR STACK]:`, err.stack);
     const { statusCode = 500 } = err;
     if (!err.message) err.message = 'Oh No, Something Went Wrong!';
+
+    // レスポンスが既に送信されているかチェック
+    if (res.headersSent) {
+        console.error('[ERROR] Headers already sent, delegating to default Express error handler');
+        return next(err);
+    }
+
     res.status(statusCode).render('error', { err });
 });
 
