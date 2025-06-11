@@ -24,7 +24,11 @@ const reviewRoutes = require('./routes/reviews');
 mongoose.set('strictQuery', false);
 
 const dbUrl = process.env.DB_URL;
-mongoose.connect(dbUrl);
+mongoose.connect(dbUrl, {
+    tls: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
