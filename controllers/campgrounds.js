@@ -14,6 +14,9 @@ module.exports.renderNewForm = (req, res) => {
 };
 
 module.exports.showCampground = async (req, res) => {
+    console.log(`[SHOW] User: ${req.user ? req.user.username : 'null'}`);
+    console.log(`[SHOW] res.locals.currentUser: ${res.locals.currentUser ? res.locals.currentUser.username : 'null'}`);
+
     const campground = await Campground.findById(req.params.id)
         .populate({
             path: 'reviews',
@@ -25,7 +28,12 @@ module.exports.showCampground = async (req, res) => {
         req.flash('error', 'キャンプ場が見つかりません');
         return res.redirect('/campgrounds');
     }
-    res.render('campgrounds/show', { campground });
+
+    // currentUserを明示的に渡す
+    res.render('campgrounds/show', {
+        campground,
+        currentUser: req.user
+    });
 };
 
 module.exports.createCampground = async (req, res) => {
