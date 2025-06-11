@@ -31,15 +31,17 @@ mongoose.connect(dbUrl, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   
-    // ── ここから TLS 関連オプション ──
-    tls: true,                          // TLS 接続を強制
-    minVersion: 'TLSv1.2',              // TLS1.2以上を必須化
-    sslValidate: true,                  // 証明書の検証を有効に
-    serverSelectionTimeoutMS: 30000,    // SRV解決＋接続待ち時間を長めに
-    socketTimeoutMS: 45000,             // ソケット通信タイムアウト
-    heartbeatFrequencyMS: 20000,        // レプリカセット・ヘルスチェック間隔
-    // ── オプションここまで ──
+    // TLSオプション
+    tls: true,
+    minVersion: 'TLSv1.2',
+    sslValidate: true,
   
+    // ── ここを追加 ──
+    tlsCAFile: path.resolve(__dirname, 'certs', 'ca.pem'),
+    // ── ここまで ──
+  
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000
   })
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
