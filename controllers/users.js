@@ -12,11 +12,11 @@ module.exports.register = async (req, res, next) => {
         req.login(registeredUser, (err) => {
             if (err) return next(err);
             req.flash('success', 'Welcome to Campnista!');
-            res.redirect('/campgrounds');
+            return res.redirect('/campgrounds');
         });
     } catch (e) {
         req.flash('error', e.message);
-        res.redirect('/register');
+        return res.redirect('/register');
     }
 };
 
@@ -28,15 +28,15 @@ module.exports.login = (req, res) => {
     req.flash('success', 'おかえりなさい！');
     const redirectUrl = res.locals.returnTo || '/campgrounds';
     delete req.session.returnTo;
-    res.redirect(redirectUrl);
+    return res.redirect(redirectUrl);
 };
 
-module.exports.logout =  (req, res, next) => {
+module.exports.logout = (req, res, next) => {
     req.logout(function (err) {
         if (err) {
             return next(err);
         }
         req.flash('success', 'ログアウトしました');
-        res.redirect('/campgrounds');
+        return res.redirect('/campgrounds');
     });
 };

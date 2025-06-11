@@ -53,7 +53,7 @@ module.exports.createCampground = async (req, res) => {
     await campground.save();
     console.log(campground);
     req.flash('success', 'キャンプ場を新規登録しました');
-    res.redirect(`/campgrounds/${campground._id}`);
+    return res.redirect(`/campgrounds/${campground._id}`);
 };
 
 module.exports.renderEditForm = async (req, res) => {
@@ -86,12 +86,12 @@ module.exports.updateCampground = async (req, res) => {
     }
 
     req.flash('success', 'キャンプ場を更新しました');
-    res.redirect(`/campgrounds/${campground._id}`);
+    return res.redirect(`/campgrounds/${campground._id}`);
 };
 
 module.exports.deleteCampground = async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     req.flash('success', 'キャンプ場を削除しました');
-    res.redirect('/campgrounds');
+    return res.redirect('/campgrounds');
 };
